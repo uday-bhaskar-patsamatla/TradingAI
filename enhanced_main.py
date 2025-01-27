@@ -13,6 +13,8 @@ import ccxt
 import time
 import logging
 from loguru import logger
+from matplotlib import pyplot as plt
+from textblob import TextBlob
 
 class AdvancedStockTradingAI:
     def __init__(self, tickers, trading_capital=10000):
@@ -77,7 +79,7 @@ class AdvancedStockTradingAI:
             
             # Fetch financial news
             news_data = self._fetch_financial_news(ticker)
-            
+            self.news_data = news_data
             # Fetch social media sentiment
             social_sentiment = self._analyze_social_sentiment(ticker)
             
@@ -126,7 +128,26 @@ class AdvancedStockTradingAI:
         """
         # Placeholder for social media sentiment analysis
         # Could use Twitter API, Reddit API, etc.
-        return 0.0
+        try:
+            # Using a simple news API (replace with actual API key)
+            url = f'https://newsapi.org/v2/everything?q={self.ticker}&apiKey=0e17c5ffb27d4e51a5e9416b09378f3a'
+            response = requests.get(url)
+            news_data = response.json()
+            
+            sentiments = []
+            for article in news_data.get('articles', []):
+                # Use TextBlob for sentiment analysis
+                if article.get('description', '') != None:
+                    blob = TextBlob(article['title'] + ' ' + article.get('description', ''))
+                    sentiments.append(blob.sentiment.polarity)
+            
+            # Calculate average sentiment
+            self.news_sentiment = np.mean(sentiments) if sentiments else 0
+            return self.news_sentiment
+        except Exception as e:
+            print(f"Error fetching news sentiment: {e}")
+            return 0
+     
     
     def _get_company_fundamentals(self, ticker):
         """
@@ -357,19 +378,19 @@ class AdvancedStockTradingAI:
             
             # Simplified trading logic
             if strategy['action'] == 'Strong Buy':
-                self.logger.success(f"Buying {ticker} at {strategy['predicted_price']}")
+                return f"Strongly Buy {ticker} at {strategy['predicted_price']}"
                 # Buy logic
                 pass
             elif strategy['action'] == 'Strong Sell':
                 # Sell logic
-                self.logger.success(f"Selling {ticker} at {strategy['predicted_price']}")
+                return f"Strongly Sell {ticker} at {strategy['predicted_price']}"
                 pass
             elif strategy['action'] == 'Hold':
                 # Hold logic
-                self.logger.info(f"Holding {ticker}")
+                return f"Hold {ticker}"
                 pass
             else:
-                self.logger.warning(f"Not performing {strategy['action']} for {ticker} due to {strategy['confidence']} confidence predicted value: {strategy['predicted_price']}")
+                return f"Do not perform {strategy['action']} for {ticker} due to {strategy['confidence']} confidence predicted value: {strategy['predicted_price']}"
 
 def main():
     # Initialize trading AI
